@@ -1,0 +1,25 @@
+jenkins:
+  authorizationStrategy: 
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: ${JENKINS_PWD}
+unclassified:          
+  globalLibraries:
+    libraries:
+      - name: "shared-libraries"
+        defaultVersion: "master"
+        implicit: true
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: ""
+
+  location:
+    adminAddress: "admin@admin.com"
+    url: http://${JENKINS_URL}

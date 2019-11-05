@@ -1,0 +1,49 @@
+- job:
+    name: JOB_TESTE
+    project-type: pipeline
+    parameters:
+      - string:
+          name: sqs_body
+          default:        
+    dsl: |
+      import groovy.json.JsonSlurperClassic
+      def sqs_param = new JsonSlurperClassic().parseText(sqs_body)
+      def key_path = sqs_param.Records[0].s3.object.key.split("/")
+
+      pipeline {
+      agent any
+        stages {
+          stage('Databese') {
+            steps {
+                    println key_path[0]
+                  }
+                }
+          stage('Backup Database') {
+            steps {
+            withCredentials([usernamePassword(credentialsId: 'dba', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sh ("/opt/mssql-tools/bin/sqlcmd -S $DATABASE -U $USERNAME -P $PASSWORD -i /etc/sqlcmd/${key_path[0]}.sql")
+            sh ("sleep 120")
+                  }
+                }
+              }
+          stage('S3Downloads') {
+            steps {
+                withAWS(region:'us-east-1', credentials:'S3-SQS') {
+                s3Download(file: "", bucket: "${sqs_param.Records[0].s3.bucket.name}", path: "${key_path[0]}/", force: true)
+                sh ("dos2unix /var/jenkins_home/jobs/${key_path[0]}/workspace/${key_path[0]}/*.sql")
+                  }
+                }
+              }
+
+          stage('Migrate Database') {
+            steps {
+                flywayrunner commandLineArgs: 'baseline', 
+                credentialsId: 'DEVDB', 
+                flywayCommand: 'migrate', 
+                installationName: 'flyway', 
+                locations: "filesystem:/var/jenkins_home/jobs/${key_path[0]}/workspace/${key_path[0]}/",
+                url: "jdbc:sqlserver://$DATABASE:1433;databaseName=${key_path[0]}"
+                  }
+                }
+              }
+            }

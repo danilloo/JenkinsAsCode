@@ -1,0 +1,45 @@
+version: "2.4"
+services:
+  jenkins:
+    image: jenkins-config-as-code:v1.0
+    build:
+      context: .
+      args:
+        - DOCKER_GROUP_ID=${DOCKER_GROUP_ID}
+    environment:
+     - JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+     - CASC_JENKINS_CONFIG=/opt/jasc
+     - JENKINS_USER=${JENKINS_USER}
+     - JENKINS_PWD=${JENKINS_PWD}
+     - JENKINS_URL=${JENKINS_URL}
+    extra_hosts:
+      - ${JENKINS_URL}:${LOCAL_IP_ADDR}
+    healthcheck:
+      test: ["CMD-SHELL", "check.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    restart: on-failure
+    ports:
+     - 80:8080
+    volumes:
+     - "${PWD}/data:/var/jenkins_home"
+     - "/var/run/docker.sock:/var/run/docker.sock"
+
+  jjb-runner:
+    image: jjb-runner:v1.0
+    build:
+      context: jjb/
+      args:
+        - JENKINS_PWD=${JENKINS_PWD}
+        - JENKINS_USER=${JENKINS_USER}
+        - JENKINS_URL=${JENKINS_URL}
+    command: ["jenkins-jobs", "update", "/opt/jenkins-job-builder/jobs"]
+    depends_on:
+      jenkins:
+        condition: service_healthy
+    extra_hosts:
+      - ${JENKINS_URL}:${LOCAL_IP_ADDR}
+    restart: on-failure
+    volumes:
+      - ${PWD}/jjb/jobs:/opt/jenkins-job-builder/jobs

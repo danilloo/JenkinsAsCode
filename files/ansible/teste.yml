@@ -1,0 +1,16 @@
+---
+- hosts: all
+  tasks:
+    
+    - name: Copy file
+      win_copy:
+        src: /var/jenkins_home/workspace/{{ artifact_path.split('/')[0] }}/{{ artifact_path.split('/')[0] }}/{{ artifact_path.split('/')[1] }}
+        dest: C:\tomcat\webapps\
+        remote_src: no
+
+    - name: Restart
+      win_uri:
+        url: http://$TOMCAT:8080/manager/text/reload?path=/{{ artifact_path.split('/')[1] }}
+        method: GET
+        headers:
+          Authorization: Basic 

@@ -1,0 +1,12 @@
+git
+permissive-script-security:0.3
+workflow-cps-global-lib
+configuration-as-code-support
+configuration-as-code
+simple-theme-plugin
+job-dsl
+workflow-job
+workflow-aggregator
+aws-sqs
+pipeline-aws
+flyway-runner
